@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: nginx
+  namespace: demo
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25-alpine        # stable version
+          ports:
+            - containerPort: 80
+  strategy:
+    canary:
+      # Traffic split steps — ArgoCD/Rollouts works through these automatically
+      steps:
+        - setWeight: 20       # send 20% traffic to canary
+        - pause: {duration: 30s}
+        - setWeight: 50       # ramp to 50%
+        - pause: {duration: 30s}
+        - setWeight: 80       # ramp to 80%
+        - pause: {duration: 30s}
+        # weight 100 is implicit — full promotion
+      canaryService: nginx-canary
+      stableService: nginx-stable
